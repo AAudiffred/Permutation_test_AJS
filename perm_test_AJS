@@ -1,0 +1,62 @@
+library(gapminder)
+
+asiancountries <- subset(gapminder, continent == "Asia" & year > 1990)
+americancountries <- subset(gapminder, continent == "Americas" & year > 1990)
+
+# GDP
+hist(asiancountries$gdpPercap, xlim = c(0, 50000), col = rgb(0, 0, 1, alpha = 0.5), main = "")
+hist(americancountries$gdpPercap, add = TRUE, col = rgb(1, 0, 0, alpha = 0.5))
+legend("topright", legend = c("Asia", "Americas"), fill = c(rgb(0, 0, 1, alpha = 0.5), rgb(1, 0, 0, alpha = 0.5)))
+title(main = "GDP: Asia vs. America")
+
+# Life Expectancy
+hist(asiancountries$lifeExp, xlim = c(40, 85), col = rgb(1, 1, 0, alpha = 0.5), main = "")
+hist(americancountries$lifeExp, add = TRUE, col = rgb(0, 1, 1, alpha = 0.5))
+legend("topright", legend = c("Asia", "Americas"), fill = c(rgb(1, 1, 0, alpha = 0.5), rgb(0, 1, 1, alpha = 0.5)))
+title(main = "Life Expectancy: Asia vs. America")
+
+# Test-statistic for original GDP and Life Expectancy data
+data <- subset(gapminder, continent == "Asia" & year > 1990 | continent == "Americas" & year > 1990)
+sample_gdp_t <- t.test(gdpPercap ~ continent, data = data, var.equal = T)$statistic
+sample_lifexp_t <- t.test(lifeExp ~ continent, data = data, var.equal = T)$statistic
+
+# Permutation process
+B <- 10000
+permutation_gdp_t <- vector("numeric", B)
+permutation_lifexp_t <- vector("numeric", B)
+
+for (i in 1:B) {
+  data$continent <- sample(data$continent, length(data$continent), replace = F)
+  permutation_gdp_t[i] <- t.test(gdpPercap ~ continent, data = data)$statistic
+  permutation_lifexp_t[i] <- t.test(lifeExp ~ continent, data = data)$statistic
+}
+
+hist(permutation_gdp_t, 
+     col = rgb(1, 0, 1, alpha = 0.5),
+     border = "black",
+     main = "Histogram of GDP Permutation",
+     xlab = "t-statistic",
+     ylab = "Frequency")
+
+abline(v = sample_gdp_t, col = "blue", lty = 2)
+legend("topright", legend = "Sample GDP", col = "blue", lty = 2)
+
+hist(permutation_lifexp_t, 
+     col = rgb(0, 0, 1, alpha = 0.5),
+     border = "black",
+     main = "Histogram of Life Expectancy Permutation",
+     xlab = "t-statistic",
+     ylab = "Frequency")
+
+abline(v = sample_lifexp_t, col = "red", lty = 2)  
+legend("topright", legend = "Sample GDP", col = "red", lty = 2)
+
+library(DescTools)
+mode_gdp_permut <- Mode(permutation_gdp_t)
+mode_lifexp_permut <- Mode(permutation_lifexp_t)
+
+library(MKinfer)
+perm.t.test(lifeExp ~ continent, data = subset(gapminder, continent == "Asia" & year > 1990 | 
+                                                 continent == "Americas" & year > 1990))
+perm.t.test(gdpPercap ~ continent, data = subset(gapminder, continent == "Asia" & year > 1990 | 
+                                                 continent == "Americas" & year > 1990))
